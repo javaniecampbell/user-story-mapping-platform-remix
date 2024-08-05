@@ -1,5 +1,5 @@
 // app/components/BoardView.tsx
-import React from "react";
+import { useEffect, useState } from "react";
 import { UserStory } from "@prisma/client";
 import {
   DragDropContext,
@@ -17,12 +17,25 @@ interface BoardViewProps {
 
 export function BoardView({ stories, onDragEnd, onEditStory, onDeleteStory }: BoardViewProps) {
   const columns = ["EPIC", "FEATURE", "STORY"];
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+
+  // if (!enabled) {
+  //   return null;
+  // }
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="overflow-x-auto">
         <div className="min-w-max grid grid-cols-3 gap-4">
-          {columns.map((column) => (
+          {enabled && columns.map((column) => (
             <Droppable key={column} droppableId={column}>
               {(provided) => (
                 <div
