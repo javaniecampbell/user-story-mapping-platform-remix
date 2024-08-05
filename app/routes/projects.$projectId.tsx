@@ -12,10 +12,16 @@ import { db } from "~/utils/db.server";
 import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
 import type { DropResult } from 'react-beautiful-dnd';
+import { requireUserId } from "~/utils/auth.server";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  // const userId = await requireUserId(request);
   const project = await db.project.findUnique({
-    where: { id: params.projectId },
+    where: { id: params.projectId, 
+      
+      // userId
+       },
     include: { userStories: true },
   });
 
@@ -62,7 +68,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return handleErrors({ title: titleError!, type: typeError! });
       }
 
-      const updateStory = await db.userStory.update({
+      const updatedStory = await db.userStory.update({
         where: { id: storyId as string },
         data: {
           title: title as string,

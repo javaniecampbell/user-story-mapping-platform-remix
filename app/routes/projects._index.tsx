@@ -4,9 +4,12 @@ import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData, Form, Link } from "@remix-run/react";
 import { ProjectForm } from "~/components/ProjectForm";
 import { db } from "~/utils/db.server";
+import { requireUserId } from "~/utils/auth.server";
 
 
-export const loader = async ({ }: LoaderFunctionArgs) => {
+
+export const loader = async ({ request}: LoaderFunctionArgs) => {
+  // const userId = await requireUserId(request);
   const projects = await db.project.findMany({
     select: { id: true, name: true },
     orderBy: { createdAt: 'desc' },

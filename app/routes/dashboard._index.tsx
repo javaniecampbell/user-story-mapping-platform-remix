@@ -1,9 +1,12 @@
 // app/routes/dashboard.tsx
 import { json } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
+import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/utils/db.server";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 
-export const loader = async () => {
+export const loader = async ({request}: LoaderFunctionArgs) => {
+  // const userId = await requireUserId(request);
   const projects = await db.project.findMany({
     select: {
       id: true,
