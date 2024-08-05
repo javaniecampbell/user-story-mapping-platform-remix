@@ -3,8 +3,8 @@ import { PanelContainer } from '~/components/PanelContainer';
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "User Story Mapping Platform" },
+    { name: "description", content: "A platform for user story mapping" },
   ];
 };
 
