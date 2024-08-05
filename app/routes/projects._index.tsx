@@ -56,31 +56,40 @@ export default function Projects() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Create a New Project</h1>
-      <ul className="space-y-4">
-        {projects.map((project) => (
-          <li key={project.id} className="flex items-center justify-between bg-white p-4 rounded shadow">
-            <Link to={`/projects/${project.id}`} className="text-blue-500 hover:underline">
-              {project.name}
-            </Link>
-            <Form method="post">
-              <input type="hidden" name="_action" value="deleteProject" />
-              <input type="hidden" name="projectId" value={project.id} />
-              <button
-                type="submit"
-                className="text-red-500 hover:text-red-700"
-                onClick={(e) => {
-                  if (!confirm("Are you sure you want to delete this project?")) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                Delete
-              </button>
-            </Form>
-          </li>
-        ))}
-      </ul>
+      <h1 className="text-2xl font-bold mb-4">Projects</h1>
+      <div className="mt-8">
+        <Link to="/projects/new" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Create New Project
+        </Link>
+      </div>
+      
+      <div className="mt-8">
+        <ul className="space-y-4">
+          {projects.map((project) => (
+            <li key={project.id} className="flex items-center justify-between bg-white p-4 rounded shadow">
+              <Link to={`/projects/${project.id}`} className="text-blue-500 hover:underline">
+                {project.name}
+              </Link>
+              <Form method="post">
+                <input type="hidden" name="_action" value="deleteProject" />
+                <input type="hidden" name="projectId" value={project.id} />
+                <button
+                  type="submit"
+                  className="text-red-500 hover:text-red-700"
+                  onClick={(e) => {
+                    if (!confirm("Are you sure you want to delete this project?")) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </Form>
+            </li>
+          ))}
+        </ul>
+      </div>
+     
       <ProjectForm />
       {actionData?.errors && (
         <div className="text-red-500 mt-2">
