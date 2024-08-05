@@ -46,7 +46,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         },
       });
 
-      return redirect(`/projects/${params.projectId}`);
+      return json({ success: true, action: "updateProject" });
     }
 
     case "updateStory": {
@@ -62,7 +62,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return handleErrors({ title: titleError!, type: typeError! });
       }
 
-      await db.userStory.update({
+      const updateStory = await db.userStory.update({
         where: { id: storyId as string },
         data: {
           title: title as string,
@@ -71,7 +71,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         },
       });
 
-      return redirect(`/projects/${params.projectId}`);
+      return json({ success: true, action: "updateStory", story: updatedStory });
     }
     case "updateStoryType": {
       const storyId = formData.get("storyId");
@@ -84,12 +84,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return handleErrors({ storyId: storyIdError!, newType: newTypeError! });
       }
 
-      await db.userStory.update({
+      const updatedStory = await db.userStory.update({
         where: { id: storyId as string },
         data: { type: newType as "EPIC" | "FEATURE" | "STORY" },
       });
 
-      return json({ success: true });
+      return json({ success: true, action: "updateStoryType", story: updatedStory });
     }
 
     default: {
@@ -121,7 +121,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         },
       });
 
-      return redirect(`/projects/${params.projectId}`);
+      return json({ success: true, action: "createStory", story: story });
     }
   }
 };
@@ -132,12 +132,25 @@ export default function ProjectDetail() {
   const fetcher = useFetcher();
   const [stories, setStories] = useState(project?.userStories);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
-  // useEffect(() => {
-  //   if (actionData?.success) {
-  //     setStories(prevStories => [...prevStories, actionData.story]);
-  //   }
 
-  // }, [actionData]);
+  useEffect(() => {
+    if (actionData?.success) {
+      switch (actionData?.action) {
+        case "updateStory":
+        case "updateStoryType":
+          setStories(prevStories => 
+            prevStories?.map(story => 
+              story.id === actionData?.story?.id ? actionData?.story : story
+            )
+          );
+          setEditingStoryId(null);
+          break;
+        case "createStory":
+          setStories(prevStories => [...prevStories, actionData?.story]);
+          break;
+      }
+    }
+  }, [actionData]);
 
   useEffect(() => {
     setStories(project?.userStories);
