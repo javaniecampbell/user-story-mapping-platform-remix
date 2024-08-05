@@ -12,9 +12,10 @@ interface BoardViewProps {
   stories: UserStory[];
   onDragEnd: (result: DropResult) => void;
   onEditStory: (storyId: string) => void;
+  onDeleteStory: (storyId: string) => void;
 }
 
-export function BoardView({ stories, onDragEnd, onEditStory }: BoardViewProps) {
+export function BoardView({ stories, onDragEnd, onEditStory, onDeleteStory }: BoardViewProps) {
   const columns = ["EPIC", "FEATURE", "STORY"];
 
   return (
@@ -47,12 +48,20 @@ export function BoardView({ stories, onDragEnd, onEditStory }: BoardViewProps) {
                           >
                             <div className="flex justify-between items-center">
                               <span>{story.title}</span>
-                              <button
-                                onClick={() => onEditStory(story.id)}
-                                className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                Edit
-                              </button>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => onEditStory(story.id)}
+                                  className="text-blue-500 mr-2"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => onDeleteStory(story.id)}
+                                  className="text-red-500"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
