@@ -277,7 +277,13 @@ export default function ProjectDetail() {
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Edit Story</h2>
           <StoryEditForm
-            story={stories?.find(s => s.id === editingStoryId)!}
+            story={stories?.find(s => s.id === editingStoryId)! ?? {
+              id: "",
+              title: "",
+              description: null,
+              type: "EPIC",
+              personaIds: [],
+            }}
           />
           <button
             onClick={() => setEditingStoryId(null)}
