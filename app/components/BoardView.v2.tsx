@@ -11,9 +11,10 @@ import {
 interface BoardViewProps {
   stories: UserStory[];
   onDragEnd: (result: DropResult) => void;
+  onEditStory: (storyId: string) => void;
 }
 
-export function BoardView({ stories, onDragEnd }: BoardViewProps) {
+export function BoardView({ stories, onDragEnd, onEditStory }: BoardViewProps) {
   const columns = ["EPIC", "FEATURE", "STORY"];
 
   return (
@@ -42,9 +43,17 @@ export function BoardView({ stories, onDragEnd }: BoardViewProps) {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
-                            className="bg-white p-2 mb-2 rounded shadow"
+                            className="bg-white p-2 mb-2 rounded shadow group"
                           >
-                            {story.title}
+                            <div className="flex justify-between items-center">
+                              <span>{story.title}</span>
+                              <button
+                                onClick={() => onEditStory(story.id)}
+                                className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                Edit
+                              </button>
+                            </div>
                           </div>
                         )}
                       </Draggable>
