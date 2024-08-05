@@ -1,7 +1,11 @@
 // app/components/Header.tsx
-import { Link } from "@remix-run/react";
-
-export function Header() {
+import { Link, Form } from "@remix-run/react";
+type HeaderProps ={
+  user?: {
+    email: string;
+  }
+}
+export function Header({ user }: HeaderProps}) {
   return (
     <header className="bg-blue-600 text-white p-4">
       <nav className="container mx-auto flex justify-between">
@@ -12,6 +16,21 @@ export function Header() {
           <li><Link to="/dashboard">Dashboard</Link></li>
           <li><Link to="/projects">Projects</Link></li>
           <li><Link to="/about">About</Link></li>
+          {user ? (
+                <>
+                  <li>Welcome, {user.email}</li>
+                  <li>
+                    <Form action="/logout" method="post">
+                      <button type="submit" className="underline">Logout</button>
+                    </Form>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li><Link to="/login">Login</Link></li>
+                  <li><Link to="/signup">Sign Up</Link></li>
+                </>
+              )}
         </ul>
       </nav>
     </header>
