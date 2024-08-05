@@ -2,6 +2,7 @@
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useActionData, useFetcher } from "@remix-run/react";
+import { useState, useEffect } from 'react';
 import { BoardView } from "~/components/BoardView";
 import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
 import { StoryForm } from "~/components/StoryForm";
@@ -81,12 +82,34 @@ export default function ProjectDetail() {
   const { project } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const fetcher = useFetcher();
+  const [stories, setStories] = useState(project?.userStories);
+
+  // useEffect(() => {
+  //   if (actionData?.success) {
+  //     setStories(prevStories => [...prevStories, actionData.story]);
+  //   }
+    
+  // }, [actionData]);
+
+  useEffect(() => {
+    setStories(project?.userStories);
+  }, [project?.userStories]);
+
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const storyId = result.draggableId;
     const newType = result.destination.droppableId;
+
+
+    // Optimistically update the UI
+    setStories(prevStories => 
+      prevStories.map(story => 
+        story.id === storyId ? { ...story, type: newType as "EPIC" | "FEATURE" | "STORY" } : story
+      )
+    );
+
 
     fetcher.submit(
       { storyId, newType, _action: "updateStoryType" },
