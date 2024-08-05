@@ -1,7 +1,9 @@
 // app/components/StoryForm.tsx
-import { Form } from "@remix-run/react";
+import { Form, useLoaderData } from "@remix-run/react";
+import { Persona } from "@prisma/client";
 
 export function StoryForm() {
+  const { personas } = useLoaderData<{ personas: Persona[] }>();
   return (
     <Form method="post" className="space-y-4">
       <div>
@@ -41,6 +43,26 @@ export function StoryForm() {
           <option value="FEATURE">Feature</option>
           <option value="STORY">User Story</option>
         </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Personas</label>
+        <div className="mt-1 space-y-2">
+          {personas.map((persona) => (
+            <div key={persona.id} className="flex items-center">
+              <input
+                type="checkbox"
+                id={`persona-${persona.id}`}
+                name="personaIds"
+                value={persona.id}
+                defaultChecked={story?.personaIds.includes(persona.id)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor={`persona-${persona.id}`} className="ml-2 text-sm text-gray-900">
+                {persona.name}
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
       <button
         type="submit"

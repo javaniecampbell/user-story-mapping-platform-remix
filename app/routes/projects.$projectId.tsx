@@ -18,18 +18,30 @@ import { requireUserId } from "~/utils/auth.server";
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // const userId = await requireUserId(request);
   const project = await db.project.findUnique({
-    where: { id: params.projectId 
-      
+    where: {
+      id: params.projectId
+
       //,userId
-       },
-    include: { userStories: true },
+    },
+    include: {
+      userStories: {
+        include: {
+          personas: true
+        },
+      }
+    },
   });
 
   if (!project) {
     throwNotFoundError("Project not found");
   }
 
-  return json({ project });
+  const personas = await db.persona.findMany({
+    // where: { userId },
+    select: { id: true, name: true },
+  });
+
+  return json({ project, personas });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -54,12 +66,47 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
       return json({ success: true, action: "updateProject" });
     }
+    case "createStory": {
+      // Handle story creation (existing code)
+      const title = formData.get("title");
+      const description = formData.get("description");
+      const type = formData.get("type");
+      const personaIds = formData.getAll("personaIds") as string[];
 
+      if (typeof title !== "string" || title.length === 0) {
+        return json({ errors: { title: "Title is required" } }, { status: 400 });
+      }
+
+      if (typeof type !== "string" || !["EPIC", "FEATURE", "STORY"].includes(type)) {
+        return json({ errors: { type: "Invalid story type" } }, { status: 400 });
+      }
+
+      // const titleError = validateRequired(title, "Title");
+      // const typeError = validateType(type, "Type", "string");
+
+      // if (titleError || typeError) {
+      //   return handleErrors({ title: titleError, type: typeError });
+      // }
+      const story = await db.userStory.create({
+        data: {
+          title,
+          description: typeof description === "string" ? description : undefined,
+          type: type as "EPIC" | "FEATURE" | "STORY",
+          projectId: params.projectId!,
+          personas:{
+            connect: personaIds.map(id => ({id})),
+          }
+        },
+      });
+
+      return json({ success: true, action: "createStory", story: story });
+    }
     case "updateStory": {
       const storyId = formData.get("storyId");
       const title = formData.get("title");
       const description = formData.get("description");
       const type = formData.get("type");
+      const personaIds = formData.getAll("personaIds") as string[];
 
       const titleError = validateRequired(title, "Title");
       const typeError = validateType(type, "Type", "string");
@@ -74,6 +121,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           title: title as string,
           description: description as string,
           type: type as "EPIC" | "FEATURE" | "STORY",
+          projectId: params.projectId!,
+          personas:{
+            connect: personaIds.map(id => ({id})),
+          }
         },
       });
 
@@ -116,37 +167,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       return json({ success: true, action: "deleteStory", storyId });
     }
 
-    default: {
-      // Handle story creation (existing code)
-      const title = formData.get("title");
-      const description = formData.get("description");
-      const type = formData.get("type");
-
-      if (typeof title !== "string" || title.length === 0) {
-        return json({ errors: { title: "Title is required" } }, { status: 400 });
-      }
-
-      if (typeof type !== "string" || !["EPIC", "FEATURE", "STORY"].includes(type)) {
-        return json({ errors: { type: "Invalid story type" } }, { status: 400 });
-      }
-
-      // const titleError = validateRequired(title, "Title");
-      // const typeError = validateType(type, "Type", "string");
-
-      // if (titleError || typeError) {
-      //   return handleErrors({ title: titleError, type: typeError });
-      // }
-      const story = await db.userStory.create({
-        data: {
-          title,
-          description: typeof description === "string" ? description : undefined,
-          type: type as "EPIC" | "FEATURE" | "STORY",
-          projectId: params.projectId!,
-        },
-      });
-
-      return json({ success: true, action: "createStory", story: story });
-    }
+    default: 
+      return json({ error: "Invalid action" }, { status: 400 });
   }
 };
 

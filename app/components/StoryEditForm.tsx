@@ -1,16 +1,23 @@
 // app/components/StoryEditForm.tsx
-import { Form } from "@remix-run/react";
-import type { UserStory } from "@prisma/client";
+import { Form, useLoaderData } from "@remix-run/react";
+import { Persona } from "@prisma/client";
 
 interface StoryEditFormProps {
-  story: UserStory;
+  story?: {
+    id: string;
+    title: string;
+    description?: string | null;
+    type: string;
+    personaIds: string[];
+  };
 }
 
 export function StoryEditForm({ story }: StoryEditFormProps) {
+  const { personas } = useLoaderData<{ personas: Persona[] }>();
   return (
     <Form method="post" className="space-y-4">
       <input type="hidden" name="_action" value="updateStory" />
-      <input type="hidden" name="storyId" value={story.id} />
+      <input type="hidden" name="storyId" value={story?.id} />
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           Title
@@ -19,7 +26,7 @@ export function StoryEditForm({ story }: StoryEditFormProps) {
           type="text"
           name="title"
           id="title"
-          defaultValue={story.title}
+          defaultValue={story?.title}
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         />
@@ -31,7 +38,7 @@ export function StoryEditForm({ story }: StoryEditFormProps) {
         <textarea
           name="description"
           id="description"
-          defaultValue={story.description || ""}
+          defaultValue={story?.description || ""}
           rows={3}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         ></textarea>
@@ -43,7 +50,7 @@ export function StoryEditForm({ story }: StoryEditFormProps) {
         <select
           name="type"
           id="type"
-          defaultValue={story.type}
+          defaultValue={story?.type}
           required
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
         >
@@ -51,6 +58,26 @@ export function StoryEditForm({ story }: StoryEditFormProps) {
           <option value="FEATURE">Feature</option>
           <option value="STORY">User Story</option>
         </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Personas</label>
+        <div className="mt-1 space-y-2">
+          {personas.map((persona) => (
+            <div key={persona.id} className="flex items-center">
+              <input
+                type="checkbox"
+                id={`persona-${persona.id}`}
+                name="personaIds"
+                value={persona.id}
+                defaultChecked={story?.personaIds.includes(persona.id)}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor={`persona-${persona.id}`} className="ml-2 text-sm text-gray-900">
+                {persona.name}
+              </label>
+            </div>
+          ))}
+        </div>
       </div>
       <button
         type="submit"
