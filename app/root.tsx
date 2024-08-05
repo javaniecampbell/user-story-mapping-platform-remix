@@ -9,6 +9,13 @@ import "./tailwind.css";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 
+export const meta: MetaFunction = () => {
+  return [
+    { title: "User Story Mapping Platform" },
+    { name: "description", content: "A platform for user story mapping" },
+  ];
+};
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
