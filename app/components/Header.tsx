@@ -5,7 +5,7 @@ type HeaderProps ={
     email: string;
   }
 }
-export function Header({ user }: HeaderProps}) {
+export function Header({ user }: HeaderProps) {
   return (
     <header className="bg-blue-600 text-white p-4">
       <nav className="container mx-auto flex justify-between">

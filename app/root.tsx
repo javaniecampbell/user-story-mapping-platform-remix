@@ -1,19 +1,30 @@
+import type { MetaFunction, LoaderFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "@remix-run/react";
 import "./tailwind.css";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
+import { getUser } from "~/utils/auth.server";
 
 export const meta: MetaFunction = () => {
   return [
     { title: "User Story Mapping Platform" },
     { name: "description", content: "A platform for user story mapping" },
   ];
+};
+
+// TODO: Refactor to remove loading from here
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const user = await getUser(request);
+  return json({ user });
 };
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -35,9 +46,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { user } = useLoaderData<typeof loader>();
   return (
     <>
-      <Header />
+      <Header user={{
+        email: user?.email!
+      }} />
       <main className="flex-grow container mx-auto px-4 py-8">
         <Outlet />
       </main>
