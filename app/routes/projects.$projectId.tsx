@@ -95,15 +95,15 @@ export default function ProjectDetail() {
   };
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">{project.name}</h1>
+      <h1 className="text-2xl font-bold mb-4">{project?.name}</h1>
       {/* <BoardView stories={project.userStories} /> */}
-      <BoardViewV2 stories={project.userStories} onDragEnd={handleDragEnd} />
+      <BoardViewV2 stories={project?.userStories ?? []} onDragEnd={handleDragEnd} />
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Add New Story</h2>
         <StoryForm />
         {actionData?.errors && (
           <div className="text-red-500 mt-2">
-            {Object.values(actionData.errors).join(", ")}
+            {Object.values(actionData?.errors).join(", ")}
           </div>
         )}
       </div>
