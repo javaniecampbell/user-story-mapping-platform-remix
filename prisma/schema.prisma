@@ -9,6 +9,39 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userStories UserStory[]
+}
+
+model UserStory {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  projectId   String    @db.ObjectId
+  project     Project   @relation(fields: [projectId], references: [id])
+  personas    Persona[] @relation(fields: [personaIds], references: [id])
+  personaIds  String[]  @db.ObjectId
+}
+
+model Persona {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  description  String?
+  stories      UserStory[] @relation(fields: [userStoryIds], references: [id])
+  userStoryIds String[]    @db.ObjectId
+}
+
+model Journey {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  steps       String[]
 }
