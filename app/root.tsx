@@ -12,6 +12,7 @@ import "./tailwind.css";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { getUser } from "~/utils/auth.server";
+import { ErrorBoundary } from "~/components/ErrorBoundary";
 
 export const meta: MetaFunction = () => {
   return [
@@ -57,3 +58,5 @@ export default function App() {
     </>
   );
 }
+
+export { ErrorBoundary };
