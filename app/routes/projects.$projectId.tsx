@@ -6,6 +6,8 @@ import { useState, useEffect } from 'react';
 import { BoardView } from "~/components/BoardView";
 import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
 import { StoryForm } from "~/components/StoryForm";
+import { ProjectEditForm } from "~/components/ProjectEditForm";
+import { StoryEditForm } from "~/components/StoryEditForm";
 import { db } from "~/utils/db.server";
 import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
@@ -28,54 +30,100 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const _action = formData.get("_action");
 
-  if (_action === "updateStoryType") {
-    const storyId = formData.get("storyId");
-    const newType = formData.get("newType");
+  switch (_action) {
+    case "updateProject": {
+      const name = formData.get("name");
+      const description = formData.get("description");
 
-    const storyIdError = validateRequired(storyId, "Story ID");
-    const newTypeError = validateType(newType, "New Type", "string");
+      const nameError = validateRequired(name, "Project name");
+      if (nameError) return handleErrors({ name: nameError });
 
-    if (storyIdError !== null || newTypeError !== null) {
-      return handleErrors({ storyId: storyIdError!, newType: newTypeError! });
+      await db.project.update({
+        where: { id: params.projectId },
+        data: {
+          name: name as string,
+          description: description as string,
+        },
+      });
+
+      return redirect(`/projects/${params.projectId}`);
     }
 
-    await db.userStory.update({
-      where: { id: storyId as string },
-      data: { type: newType as "EPIC" | "FEATURE" | "STORY" },
-    });
+    case "updateStory": {
+      const storyId = formData.get("storyId");
+      const title = formData.get("title");
+      const description = formData.get("description");
+      const type = formData.get("type");
 
-    return json({ success: true });
+      const titleError = validateRequired(title, "Title");
+      const typeError = validateType(type, "Type", "string");
+
+      if (titleError || typeError) {
+        return handleErrors({ title: titleError!, type: typeError! });
+      }
+
+      await db.userStory.update({
+        where: { id: storyId as string },
+        data: {
+          title: title as string,
+          description: description as string,
+          type: type as "EPIC" | "FEATURE" | "STORY",
+        },
+      });
+
+      return redirect(`/projects/${params.projectId}`);
+    }
+    case "updateStoryType": {
+      const storyId = formData.get("storyId");
+      const newType = formData.get("newType");
+
+      const storyIdError = validateRequired(storyId, "Story ID");
+      const newTypeError = validateType(newType, "New Type", "string");
+
+      if (storyIdError !== null || newTypeError !== null) {
+        return handleErrors({ storyId: storyIdError!, newType: newTypeError! });
+      }
+
+      await db.userStory.update({
+        where: { id: storyId as string },
+        data: { type: newType as "EPIC" | "FEATURE" | "STORY" },
+      });
+
+      return json({ success: true });
+    }
+
+    default: {
+      // Handle story creation (existing code)
+      const title = formData.get("title");
+      const description = formData.get("description");
+      const type = formData.get("type");
+
+      if (typeof title !== "string" || title.length === 0) {
+        return json({ errors: { title: "Title is required" } }, { status: 400 });
+      }
+
+      if (typeof type !== "string" || !["EPIC", "FEATURE", "STORY"].includes(type)) {
+        return json({ errors: { type: "Invalid story type" } }, { status: 400 });
+      }
+
+      // const titleError = validateRequired(title, "Title");
+      // const typeError = validateType(type, "Type", "string");
+
+      // if (titleError || typeError) {
+      //   return handleErrors({ title: titleError, type: typeError });
+      // }
+      const story = await db.userStory.create({
+        data: {
+          title,
+          description: typeof description === "string" ? description : undefined,
+          type: type as "EPIC" | "FEATURE" | "STORY",
+          projectId: params.projectId!,
+        },
+      });
+
+      return redirect(`/projects/${params.projectId}`);
+    }
   }
-  // Handle story creation (existing code)
-  const title = formData.get("title");
-  const description = formData.get("description");
-  const type = formData.get("type");
-
-  if (typeof title !== "string" || title.length === 0) {
-    return json({ errors: { title: "Title is required" } }, { status: 400 });
-  }
-
-  if (typeof type !== "string" || !["EPIC", "FEATURE", "STORY"].includes(type)) {
-    return json({ errors: { type: "Invalid story type" } }, { status: 400 });
-  }
-
-  // const titleError = validateRequired(title, "Title");
-  // const typeError = validateType(type, "Type", "string");
-
-  // if (titleError || typeError) {
-  //   return handleErrors({ title: titleError, type: typeError });
-  // }
-
-  const story = await db.userStory.create({
-    data: {
-      title,
-      description: typeof description === "string" ? description : undefined,
-      type: type as "EPIC" | "FEATURE" | "STORY",
-      projectId: params.projectId!,
-    },
-  });
-
-  return redirect(`/projects/${params.projectId}`);
 };
 
 export default function ProjectDetail() {
@@ -83,12 +131,12 @@ export default function ProjectDetail() {
   const actionData = useActionData<typeof action>();
   const fetcher = useFetcher();
   const [stories, setStories] = useState(project?.userStories);
-
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   // useEffect(() => {
   //   if (actionData?.success) {
   //     setStories(prevStories => [...prevStories, actionData.story]);
   //   }
-    
+
   // }, [actionData]);
 
   useEffect(() => {
@@ -104,8 +152,8 @@ export default function ProjectDetail() {
 
 
     // Optimistically update the UI
-    setStories(prevStories => 
-      prevStories?.map(story => 
+    setStories(prevStories =>
+      prevStories?.map(story =>
         story.id === storyId ? { ...story, type: newType as "EPIC" | "FEATURE" | "STORY" } : story
       )
     );
@@ -120,7 +168,36 @@ export default function ProjectDetail() {
     <div>
       <h1 className="text-2xl font-bold mb-4">{project?.name}</h1>
       {/* <BoardView stories={project.userStories} /> */}
-      <BoardViewV2 stories={project?.userStories ?? []} onDragEnd={handleDragEnd} />
+      <div className="mb-8">
+        <h2 className="text-xl font-bold mb-4">Edit Project</h2>
+        <ProjectEditForm project={{
+          id: project?.id ?? "",
+          name: project?.name ?? "",
+          description: project?.description ?? null,
+          createdAt: project?.createdAt ? new Date(project?.createdAt ) : new Date(),
+          updatedAt: project?.updatedAt ? new Date(project?.updatedAt) : new Date(),
+
+        }} />
+      </div>
+      <BoardViewV2
+        stories={stories ?? []}
+        onDragEnd={handleDragEnd}
+        onEditStory={(storyId) => setEditingStoryId(storyId)}
+      />
+       {editingStoryId && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Edit Story</h2>
+          <StoryEditForm 
+            story={stories?.find(s => s.id === editingStoryId)!}
+          />
+          <button
+            onClick={() => setEditingStoryId(null)}
+            className="mt-2 text-sm text-gray-500 hover:text-gray-700"
+          >
+            Cancel Edit
+          </button>
+        </div>
+      )}
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Add New Story</h2>
         <StoryForm />
