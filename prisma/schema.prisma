@@ -27,6 +27,7 @@ model UserStory {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
+  type        StoryType
   projectId   String    @db.ObjectId
   project     Project   @relation(fields: [projectId], references: [id])
   personas    Persona[] @relation(fields: [personaIds], references: [id])
@@ -46,4 +47,10 @@ model Journey {
   name        String
   description String?
   steps       String[]
+}
+
+enum StoryType {
+  EPIC
+  FEATURE
+  STORY
 }
