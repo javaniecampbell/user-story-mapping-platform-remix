@@ -1,7 +1,7 @@
 // app/routes/projects.$projectId.tsx
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useActionData, useFetcher } from "@remix-run/react";
+import { useLoaderData, useActionData, useFetcher, Form } from "@remix-run/react";
 import { useState, useEffect } from 'react';
 import { BoardView } from "~/components/BoardView";
 import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
@@ -179,7 +179,23 @@ export default function ProjectDetail() {
   };
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">{project?.name}</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">{project?.name}</h1>
+        <Form method="post">
+          <input type="hidden" name="_action" value="deleteProject" />
+          <button
+            type="submit"
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            onClick={(e) => {
+              if (!confirm("Are you sure you want to delete this project?")) {
+                e.preventDefault();
+              }
+            }}
+          >
+            Delete Project
+          </button>
+        </Form>
+      </div>
       {/* <BoardView stories={project.userStories} /> */}
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-4">Edit Project</h2>
