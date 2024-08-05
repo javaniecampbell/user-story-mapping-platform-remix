@@ -1,8 +1,9 @@
 // app/routes/projects.$projectId.tsx
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useActionData } from "@remix-run/react";
+import { useLoaderData, useActionData, useFetcher } from "@remix-run/react";
 import { BoardView } from "~/components/BoardView";
+import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
 import { StoryForm } from "~/components/StoryForm";
 import { db } from "~/utils/db.server";
 
@@ -48,11 +49,24 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export default function ProjectDetail() {
   const { project } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const fetcher = useFetcher();
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const storyId = result.draggableId;
+    const newType = result.destination.droppableId;
+
+    fetcher.submit(
+      { storyId, newType, _action: "updateStoryType" },
+      { method: "post" }
+    );
+  };
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">{project.name}</h1>
-      <BoardView stories={project.userStories} />
+      {/* <BoardView stories={project.userStories} /> */}
+      <BoardViewV2 stories={project.userStories} onDragEnd />
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Add New Story</h2>
         <StoryForm />
