@@ -6,6 +6,8 @@ import { BoardView } from "~/components/BoardView";
 import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
 import { StoryForm } from "~/components/StoryForm";
 import { db } from "~/utils/db.server";
+import { validateRequired, validateType } from "~/utils/validation.server";
+import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
 import type { DropResult } from 'react-beautiful-dnd';
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
@@ -15,7 +17,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   });
 
   if (!project) {
-    throw new Response("Not Found", { status: 404 });
+    throwNotFoundError("Project not found");
   }
 
   return json({ project });
@@ -29,12 +31,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const storyId = formData.get("storyId");
     const newType = formData.get("newType");
 
-    if (typeof storyId !== "string" || typeof newType !== "string") {
-      return json({ errors: { story: "Invalid story update" } }, { status: 400 });
+    const storyIdError = validateRequired(storyId, "Story ID");
+    const newTypeError = validateType(newType, "New Type", "string");
+
+    if (storyIdError !== null || newTypeError !== null) {
+      return handleErrors({ storyId: storyIdError!, newType: newTypeError! });
     }
 
     await db.userStory.update({
-      where: { id: storyId },
+      where: { id: storyId as string },
       data: { type: newType as "EPIC" | "FEATURE" | "STORY" },
     });
 
@@ -52,6 +57,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (typeof type !== "string" || !["EPIC", "FEATURE", "STORY"].includes(type)) {
     return json({ errors: { type: "Invalid story type" } }, { status: 400 });
   }
+
+  // const titleError = validateRequired(title, "Title");
+  // const typeError = validateType(type, "Type", "string");
+
+  // if (titleError || typeError) {
+  //   return handleErrors({ title: titleError, type: typeError });
+  // }
 
   const story = await db.userStory.create({
     data: {
