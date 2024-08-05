@@ -18,9 +18,9 @@ import { requireUserId } from "~/utils/auth.server";
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // const userId = await requireUserId(request);
   const project = await db.project.findUnique({
-    where: { id: params.projectId, 
+    where: { id: params.projectId 
       
-      // userId
+      //,userId
        },
     include: { userStories: true },
   });
