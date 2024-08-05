@@ -54,7 +54,6 @@ export function StoryForm() {
                 id={`persona-${persona.id}`}
                 name="personaIds"
                 value={persona.id}
-                defaultChecked={story?.personaIds.includes(persona.id)}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
               />
               <label htmlFor={`persona-${persona.id}`} className="ml-2 text-sm text-gray-900">
