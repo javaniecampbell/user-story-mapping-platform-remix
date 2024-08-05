@@ -92,6 +92,24 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       return json({ success: true, action: "updateStoryType", story: updatedStory });
     }
 
+    case "deleteProject": {
+      await db.project.delete({
+        where: { id: params.projectId },
+      });
+      return redirect("/projects");
+    }
+
+    case "deleteStory": {
+      const storyId = formData.get("storyId");
+      if (typeof storyId !== "string") {
+        return json({ error: "Invalid story ID" }, { status: 400 });
+      }
+      await db.userStory.delete({
+        where: { id: storyId },
+      });
+      return json({ success: true, action: "deleteStory", storyId });
+    }
+
     default: {
       // Handle story creation (existing code)
       const title = formData.get("title");
@@ -133,13 +151,23 @@ export default function ProjectDetail() {
   const [stories, setStories] = useState(project?.userStories);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
 
+  const handleDeleteStory = (storyId: string) => {
+    if (confirm("Are you sure you want to delete this story?")) {
+      fetcher.submit(
+        { storyId, _action: "deleteStory" },
+        { method: "post" }
+      );
+    }
+  };
+
+
   useEffect(() => {
     if (actionData?.success) {
       switch (actionData?.action) {
         case "updateStory":
         case "updateStoryType":
-          setStories(prevStories => 
-            prevStories?.map(story => 
+          setStories(prevStories =>
+            prevStories?.map(story =>
               story.id === actionData?.story?.id ? actionData?.story : story
             )
           );
@@ -147,6 +175,9 @@ export default function ProjectDetail() {
           break;
         case "createStory":
           setStories(prevStories => [...prevStories, actionData?.story]);
+          break;
+        case "deleteStory":
+          setStories(prevStories => prevStories?.filter(story => story.id !== actionData?.storyId));
           break;
       }
     }
@@ -203,7 +234,7 @@ export default function ProjectDetail() {
           id: project?.id ?? "",
           name: project?.name ?? "",
           description: project?.description ?? null,
-          createdAt: project?.createdAt ? new Date(project?.createdAt ) : new Date(),
+          createdAt: project?.createdAt ? new Date(project?.createdAt) : new Date(),
           updatedAt: project?.updatedAt ? new Date(project?.updatedAt) : new Date(),
 
         }} />
@@ -212,11 +243,12 @@ export default function ProjectDetail() {
         stories={stories ?? []}
         onDragEnd={handleDragEnd}
         onEditStory={(storyId) => setEditingStoryId(storyId)}
+        onDeleteStory={handleDeleteStory}
       />
-       {editingStoryId && (
+      {editingStoryId && (
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Edit Story</h2>
-          <StoryEditForm 
+          <StoryEditForm
             story={stories?.find(s => s.id === editingStoryId)!}
           />
           <button
