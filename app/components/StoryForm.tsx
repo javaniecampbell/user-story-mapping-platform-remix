@@ -1,11 +1,26 @@
 // app/components/StoryForm.tsx
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import { Persona } from "@prisma/client";
-
-export function StoryForm() {
+import { useEffect, useRef } from "react";
+type StoryFormProps = {
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+};
+export function StoryForm({ onSubmit }: StoryFormProps) {
   const { personas } = useLoaderData<{ personas: Persona[] }>();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
+  let formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    // if (navigation.state === "idle") {
+    //   onSubmit?.(new Event("submit"));
+    // }
+    if (!isSubmitting) {
+      formRef.current?.reset();
+    }
+  }, [navigation.state])
+
   return (
-    <Form method="post" className="space-y-4">
+    <Form ref={formRef} method="post" onSubmit={onSubmit} className="space-y-4">
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-gray-700">
           Title
@@ -65,9 +80,10 @@ export function StoryForm() {
       </div>
       <button
         type="submit"
+        disabled={isSubmitting}
         className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
       >
-        Create Story
+        {isSubmitting ? "Submitting..." : "Create Story"}
       </button>
     </Form>
   );
