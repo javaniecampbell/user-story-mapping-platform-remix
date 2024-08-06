@@ -1,6 +1,6 @@
 // app/components/BoardView.tsx
 import { useEffect, useState } from "react";
-import { UserStory } from "@prisma/client";
+import { UserStory, Persona } from "@prisma/client";
 import {
   DragDropContext,
   Droppable,
@@ -9,7 +9,8 @@ import {
 } from "react-beautiful-dnd";
 
 interface BoardViewProps {
-  stories: UserStory[];
+  stories: (UserStory & { personas: Persona[] })[];
+  personas: Persona[];
   onDragEnd: (result: DropResult) => void;
   onEditStory: (storyId: string) => void;
   onDeleteStory: (storyId: string) => void;
@@ -76,6 +77,31 @@ export function BoardView({ stories, onDragEnd, onEditStory, onDeleteStory }: Bo
                                 </button>
                               </div>
                             </div>
+                            <Droppable droppableId={`story-${story.id}`} type="PERSONA">
+                              {(provided) => (
+                                <div
+                                  {...provided.droppableProps}
+                                  ref={provided.innerRef}
+                                  className="mt-2 min-h-[20px]"
+                                >
+                                  {story.personas.map((persona, index) => (
+                                    <Draggable key={persona.id} draggableId={persona.id} index={index}>
+                                      {(provided) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className="bg-blue-100 text-xs p-1 mb-1 rounded"
+                                        >
+                                          {persona.name}
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
                           </div>
                         )}
                       </Draggable>
