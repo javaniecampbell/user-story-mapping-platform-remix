@@ -3,21 +3,21 @@ import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useFetcher, Form } from "@remix-run/react";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { db } from "~/utils/db.server";
-import { requireUserId } from "~/utils/auth.server";
+import { getUserId, requireUserId } from "~/utils/auth.server";
 import { useState } from 'react';
 import { ErrorBoundary } from "~/components/ErrorBoundary";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // const userId = await requireUserId(request);
+  const userId = await requireUserId(request);
   const personas = await db.persona.findMany({
-    // where: { userId },
+    where: { userId },
     select: { id: true, name: true, description: true },
   });
   return json({ personas });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // const userId = await requireUserId(request);
+  const userId = await getUserId(request);
   const formData = await request.formData();
   const _action = formData.get("_action");
 
@@ -33,7 +33,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       data: {
         name,
         description: typeof description === "string" ? description : undefined,
-        // userId,
+        userId,
       },
     });
 
