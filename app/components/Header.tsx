@@ -1,8 +1,8 @@
 // app/components/Header.tsx
 import { Link, Form } from "@remix-run/react";
-type HeaderProps ={
+type HeaderProps = {
   user?: {
-    email: string;
+    email?: string;
   }
 }
 export function Header({ user }: HeaderProps) {
@@ -17,20 +17,20 @@ export function Header({ user }: HeaderProps) {
           <li><Link to="/projects">Projects</Link></li>
           <li><Link to="/about">About</Link></li>
           {user ? (
-                <>
-                  <li>Welcome, {user.email}</li>
-                  <li>
-                    <Form action="/logout" method="post">
-                      <button type="submit" className="underline">Logout</button>
-                    </Form>
-                  </li>
-                </>
-              ) : (
-                <>
-                  <li><Link to="/login">Login</Link></li>
-                  <li><Link to="/signup">Sign Up</Link></li>
-                </>
-              )}
+            <>
+              <li>Welcome, {user?.email}</li>
+              <li>
+                <Form action="/logout" method="post">
+                  <button type="submit" className="underline">Logout</button>
+                </Form>
+              </li>
+            </>
+          ) : (
+            <>
+              <li><Link to="/login">Login</Link></li>
+              <li><Link to="/signup">Sign Up</Link></li>
+            </>
+          )}
         </ul>
       </nav>
     </header>

@@ -21,12 +21,12 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-// TODO: Refactor to remove loading from here
 
-// export const loader = async ({ request }: LoaderFunctionArgs) => {
-//   const user = await getUser(request);
-//   return json({ user });
-// };
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const user = await getUser(request);
+  return json({ user });
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -47,10 +47,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  // const { user } = useLoaderData<typeof loader>();
+  const { user } = useLoaderData<typeof loader>();
   return (
     <>
-      <Header />
+      <Header user={{
+        email: user?.email,
+      }} />
       <main className="flex-grow container mx-auto px-4 py-8">
         <Outlet />
       </main>
