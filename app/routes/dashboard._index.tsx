@@ -5,9 +5,10 @@ import { requireUserId } from "~/utils/auth.server";
 import { db } from "~/utils/db.server";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 
-export const loader = async ({request}: LoaderFunctionArgs) => {
-  // const userId = await requireUserId(request);
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const userId = await requireUserId(request);
   const projects = await db.project.findMany({
+    where: { userId },
     select: {
       id: true,
       name: true,
@@ -47,7 +48,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-blue-100 p-4 rounded shadow">
           <h2 className="text-xl font-semibold mb-2">Total Projects</h2>
