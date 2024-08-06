@@ -32,7 +32,7 @@ export function StoryForm({ onSubmit }: StoryFormProps) {
 
   const handleRefineStory = () => {
     fetcher.submit(
-      { _action: "refineStory", story: `${title}\n${description}` },
+      { _action: "refineStory", story: `Title: ${title}\nDescription: ${description}` },
       { method: "post" }
     );
   };
