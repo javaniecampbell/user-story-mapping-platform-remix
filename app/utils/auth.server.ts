@@ -1,5 +1,6 @@
 // app/utils/auth.server.ts
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { createCookieSessionStorage, redirect } from "@remix-run/node";
 import { db } from "./db.server";
 
@@ -8,10 +9,43 @@ type LoginForm = {
   password: string;
 };
 
+function comparePasswordInline(password: string, hash: string) {
+  const [salt, key] = hash.split("$");
+  const newKey = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .toString("hex");
+  return key === newKey;
+}
+
+function comarePassword(password: string, salt: string, hash: string) {
+  const newKey = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .toString("hex");
+  return hash === newKey;
+}
+
 export async function register({ email, password }: LoginForm) {
-  const passwordHash = await bcrypt.hash(password, 10);
+  // const passwordHash = await bcrypt.hash(password, 10);
+  let salt = crypto.randomBytes(16).toString("hex");
+  let fastHash = crypto
+    .pbkdf2Sync(password, salt, 1, 64, "sha256")
+    .toString("hex"); // faster but less secure
+  // let slowHash = crypto
+  //   .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+  //   .toString("hex"); // more secure but slower
+  // let passwordHash = salt + "$" + fastHash;
   const user = await db.user.create({
-    data: { email, password: passwordHash },
+    data: {
+      email,
+      // password: passwordHash
+      password: {
+        create: {
+          salt: salt,
+          hash: fastHash,
+        }
+      }
+
+    },
   });
   return { id: user.id, email };
 }
@@ -19,9 +53,18 @@ export async function register({ email, password }: LoginForm) {
 export async function login({ email, password }: LoginForm) {
   const user = await db.user.findUnique({
     where: { email },
+    include: {
+      password: true
+    }
   });
   if (!user) return null;
-  const isCorrectPassword = await bcrypt.compare(password, user.password);
+
+if(!user.password) return null;
+
+  // const isCorrectPassword = comparePasswordInline(password, user.password)
+
+  // const isCorrectPassword = await bcrypt.compare(password, user.password);
+  const isCorrectPassword = comarePassword(password, user.password.salt, user.password.hash);
   if (!isCorrectPassword) return null;
   return { id: user.id, email };
 }

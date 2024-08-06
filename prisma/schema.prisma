@@ -26,11 +26,11 @@ model User {
 }
 
 model Password {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  salt   String
-  hash   String
-  user   User   @relation(fields: [userId], references: [id])
-  userId String @unique @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  salt      String
+  hash      String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
