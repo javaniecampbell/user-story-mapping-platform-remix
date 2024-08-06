@@ -14,6 +14,7 @@ import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server"
 import type { DropResult } from 'react-beautiful-dnd';
 import { getUserId, requireUserId } from "~/utils/auth.server";
 import { generateStoryIdeas, refineUserStory } from "~/utils/openai.server";
+import { PersonaManager } from "~/components/PersonaManager";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -23,6 +24,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       id: params.projectId, userId
     },
     include: {
+      personas: true,
       userStories: {
         include: {
           personas: true
@@ -170,6 +172,51 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       return json({ success: true, action: "updateStoryType", story: updatedStory });
     }
 
+    case "createPersona": {
+      const name = formData.get("name");
+      const projectId = formData.get("projectId");
+
+      if (typeof name !== "string" || typeof projectId !== "string") {
+        return handleErrors({ name: "Invalid persona data" });
+      }
+
+      const persona = await db.persona.create({
+        data: { name, projectIds: [projectId], userId: userId! },
+      });
+
+      return json({ success: true, persona });
+    }
+    case "deletePersona": {
+      const personaId = formData.get("personaId");
+
+      if (typeof personaId !== "string") {
+        return handleErrors({ personaId: "Invalid persona ID" });
+      }
+
+      await db.persona.delete({ where: { id: personaId } });
+
+      return json({ success: true, deletedPersonaId: personaId });
+    }
+    case "mapPersonaToStory": {
+      const personaId = formData.get("personaId");
+      const storyId = formData.get("storyId");
+
+      if (typeof personaId !== "string" || typeof storyId !== "string") {
+        return handleErrors({ mapping: "Invalid mapping data" });
+      }
+
+      await db.userStory.update({
+        where: { id: storyId },
+        data: {
+          personas: {
+            connect: { id: personaId }
+          }
+        }
+      });
+
+      return json({ success: true });
+    }
+
     case "deleteProject": {
       await db.project.delete({
         where: { id: params.projectId, userId: userId! },
@@ -200,23 +247,6 @@ export default function ProjectDetail() {
   const [stories, setStories] = useState(project?.userStories);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
 
-  const handleDeleteStory = (storyId: string) => {
-    if (confirm("Are you sure you want to delete this story?")) {
-      fetcher.submit(
-        { storyId, _action: "deleteStory" },
-        { method: "post" }
-      );
-    }
-  };
-
-  const handleStoryCreation = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formaData = new FormData(e.currentTarget);
-    formaData.append("_action", "createStory");
-    fetcher.submit(formaData, { method: "post" })
-  };
-
-
   useEffect(() => {
     if (actionData?.success) {
       switch (actionData?.action) {
@@ -244,6 +274,22 @@ export default function ProjectDetail() {
   }, [project?.userStories]);
 
 
+  const handleDeleteStory = (storyId: string) => {
+    if (confirm("Are you sure you want to delete this story?")) {
+      fetcher.submit(
+        { storyId, _action: "deleteStory" },
+        { method: "post" }
+      );
+    }
+  };
+
+  const handleStoryCreation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formaData = new FormData(e.currentTarget);
+    formaData.append("_action", "createStory");
+    fetcher.submit(formaData, { method: "post" })
+  };
+
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
@@ -264,9 +310,22 @@ export default function ProjectDetail() {
       { method: "post" }
     );
   };
+
+  const handlePersonaDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const personaId = result.draggableId;
+    const storyId = result.destination.droppableId;
+
+    fetcher.submit(
+      { personaId, storyId, _action: "mapPersonaToStory" },
+      { method: "post" }
+    );
+  };
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">{project?.name}</h1>
         <Link
           to="journeys"
@@ -289,8 +348,58 @@ export default function ProjectDetail() {
           </button>
         </Form>
       </div>
-      {/* <BoardView stories={project.userStories} /> */}
-      <div className="mb-8">
+
+
+      <div className="mt-8">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
+            <BoardViewV2
+              stories={stories ?? []}
+              onDragEnd={handleDragEnd}
+              onEditStory={(storyId) => setEditingStoryId(storyId)}
+              onDeleteStory={handleDeleteStory}
+            />
+          </div>
+          <div>
+            <PersonaManager projectId={project.id} personas={project.personas} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        {editingStoryId ? (
+          <>
+            <h2 className="text-xl font-bold mb-4">Edit Story</h2>
+            <StoryEditForm
+              story={stories?.find(s => s.id === editingStoryId)! ?? {
+                id: "",
+                title: "",
+                description: null,
+                type: "EPIC",
+                personaIds: [],
+              }}
+            />
+            <button
+              onClick={() => setEditingStoryId(null)}
+              className="mt-2 text-sm text-gray-500 hover:text-gray-700"
+            >
+              Cancel Edit
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-xl font-bold mb-4">Add New Story</h2>
+            <StoryForm onSubmit={handleStoryCreation} />
+          </>
+        )}
+        {actionData?.errors && (
+          <div className="text-red-500 mt-2">
+            {Object.values(actionData?.errors).join(", ")}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Edit Project</h2>
         <ProjectEditForm project={{
           id: project?.id ?? "",
@@ -300,41 +409,6 @@ export default function ProjectDetail() {
           updatedAt: project?.updatedAt ? new Date(project?.updatedAt) : new Date(),
 
         }} />
-      </div>
-      <BoardViewV2
-        stories={stories ?? []}
-        onDragEnd={handleDragEnd}
-        onEditStory={(storyId) => setEditingStoryId(storyId)}
-        onDeleteStory={handleDeleteStory}
-      />
-      {editingStoryId && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Edit Story</h2>
-          <StoryEditForm
-            story={stories?.find(s => s.id === editingStoryId)! ?? {
-              id: "",
-              title: "",
-              description: null,
-              type: "EPIC",
-              personaIds: [],
-            }}
-          />
-          <button
-            onClick={() => setEditingStoryId(null)}
-            className="mt-2 text-sm text-gray-500 hover:text-gray-700"
-          >
-            Cancel Edit
-          </button>
-        </div>
-      )}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4">Add New Story</h2>
-        <StoryForm onSubmit={handleStoryCreation} />
-        {actionData?.errors && (
-          <div className="text-red-500 mt-2">
-            {Object.values(actionData?.errors).join(", ")}
-          </div>
-        )}
       </div>
     </div>
   );
