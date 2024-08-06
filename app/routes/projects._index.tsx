@@ -1,7 +1,7 @@
 // app/routes/projects.tsx
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData, Form, Link } from "@remix-run/react";
+import { useActionData, useLoaderData, Form, Link, useFetcher } from "@remix-run/react";
 import { ProjectForm } from "~/components/ProjectForm";
 import { db } from "~/utils/db.server";
 import { requireUserId } from "~/utils/auth.server";
@@ -56,13 +56,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     return redirect(`/projects/${project.id}`);
   }
-  return json({ errors: { _messages: "Invalid action" }}, { status: 400 });
+  return json({ errors: { _messages: "Invalid action" } }, { status: 400 });
 };
 
 export default function Projects() {
   const { projects } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const fetcher = useFetcher();
 
+  const handleProjectCreation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formaData = new FormData(e.currentTarget);
+    formaData.append("_action", "createProject");
+    fetcher.submit(formaData, { method: "post" })
+  };
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">Projects</h1>
@@ -99,7 +106,7 @@ export default function Projects() {
         </ul>
       </div>
 
-      <ProjectForm />
+      <ProjectForm onSubmit={handleProjectCreation} />
       {actionData?.errors && (
         <div className="text-red-500 mt-2">
           {Object.values(actionData.errors).join(", ")}
