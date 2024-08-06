@@ -1,6 +1,6 @@
 // app/routes/login.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { json, redirect } from "@remix-run/node";
 import { useActionData, Form } from "@remix-run/react";
 import { login, createUserSession } from "~/utils/auth.server";
@@ -31,6 +31,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Login() {
   const actionData = useActionData<typeof action>();
   const [errors, setErrors] = useState(actionData?.error ?? null);
+
+  useEffect(() => {
+    if (actionData?.error) {
+      setErrors(actionData.error);
+    }
+  }, [actionData?.error]);
 
   return (
     <div className="max-w-md mx-auto mt-8">

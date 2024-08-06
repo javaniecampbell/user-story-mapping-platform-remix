@@ -19,7 +19,7 @@ function comparePasswordInline(password: string, hash: string) {
 
 function comarePassword(password: string, salt: string, hash: string) {
   const newKey = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, "sha512")
+    .pbkdf2Sync(password, salt, 1000, 64, "sha256")
     .toString("hex");
   return hash === newKey;
 }
@@ -28,7 +28,7 @@ export async function register({ email, password }: LoginForm) {
   // const passwordHash = await bcrypt.hash(password, 10);
   let salt = crypto.randomBytes(16).toString("hex");
   let fastHash = crypto
-    .pbkdf2Sync(password, salt, 1, 64, "sha256")
+    .pbkdf2Sync(password, salt, 1000, 64, "sha256")
     .toString("hex"); // faster but less secure
   // let slowHash = crypto
   //   .pbkdf2Sync(password, salt, 1000, 64, "sha512")
@@ -59,7 +59,7 @@ export async function login({ email, password }: LoginForm) {
   });
   if (!user) return null;
 
-if(!user.password) return null;
+  if (!user.password) return null;
 
   // const isCorrectPassword = comparePasswordInline(password, user.password)
 
