@@ -12,17 +12,15 @@ import { db } from "~/utils/db.server";
 import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
 import type { DropResult } from 'react-beautiful-dnd';
-import { requireUserId } from "~/utils/auth.server";
+import { getUserId, requireUserId } from "~/utils/auth.server";
 
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  // const userId = await requireUserId(request);
+  const userId = await requireUserId(request);
   const project = await db.project.findUnique({
     where: {
-      id: params.projectId
-
-      //,userId
+      id: params.projectId, userId
     },
     include: {
       userStories: {
@@ -38,7 +36,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
   const personas = await db.persona.findMany({
-    // where: { userId },
+    where: { userId },
     select: { id: true, name: true },
   });
 
@@ -46,6 +44,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const userId = await getUserId(request);
   const formData = await request.formData();
   const _action = formData.get("_action");
 
@@ -58,7 +57,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       if (nameError) return handleErrors({ name: nameError });
 
       await db.project.update({
-        where: { id: params.projectId },
+        where: { id: params.projectId, userId: userId! },
         data: {
           name: name as string,
           description: description as string,
@@ -94,9 +93,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           description: typeof description === "string" ? description : undefined,
           type: type as "EPIC" | "FEATURE" | "STORY",
           projectId: params.projectId!,
-          personas:{
-            connect: personaIds.map(id => ({id})),
-          }
+          personas: {
+            connect: personaIds.map(id => ({ id })),
+          },
         },
       });
 
@@ -123,8 +122,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           description: description as string,
           type: type as "EPIC" | "FEATURE" | "STORY",
           projectId: params.projectId!,
-          personas:{
-            connect: personaIds.map(id => ({id})),
+          personas: {
+            connect: personaIds.map(id => ({ id })),
           }
         },
       });
@@ -152,7 +151,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
     case "deleteProject": {
       await db.project.delete({
-        where: { id: params.projectId },
+        where: { id: params.projectId, userId: userId! },
       });
       return redirect("/projects");
     }
@@ -168,7 +167,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       return json({ success: true, action: "deleteStory", storyId });
     }
 
-    default: 
+    default:
       return json({ error: "Invalid action" }, { status: 400 });
   }
 };
@@ -187,6 +186,13 @@ export default function ProjectDetail() {
         { method: "post" }
       );
     }
+  };
+
+  const handleStoryCreation = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formaData = new FormData(e.currentTarget);
+    formaData.append("_action", "createStory");
+    fetcher.submit(formaData, { method: "post" })
   };
 
 
@@ -242,11 +248,11 @@ export default function ProjectDetail() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">{project?.name}</h1>
         <Link
-        to="journeys"
-        className="inline-block mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-      >
-        Generate User Journey
-      </Link>
+          to="journeys"
+          className="inline-block mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+        >
+          Generate User Journey
+        </Link>
         <Form method="post">
           <input type="hidden" name="_action" value="deleteProject" />
           <button
@@ -302,7 +308,7 @@ export default function ProjectDetail() {
       )}
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Add New Story</h2>
-        <StoryForm />
+        <StoryForm onSubmit={handleStoryCreation} />
         {actionData?.errors && (
           <div className="text-red-500 mt-2">
             {Object.values(actionData?.errors).join(", ")}
