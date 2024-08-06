@@ -34,6 +34,7 @@ model Project {
   userStories UserStory[]
   user        User        @relation(fields: [userId], references: [id])
   userId      String      @db.ObjectId
+  Journey     Journey[]
 }
 
 model UserStory {
@@ -55,6 +56,7 @@ model Persona {
   user         User        @relation(fields: [userId], references: [id])
   stories      UserStory[] @relation(fields: [userStoryIds], references: [id])
   userStoryIds String[]    @db.ObjectId
+  Journey      Journey[]
 }
 
 model Journey {
@@ -62,7 +64,14 @@ model Journey {
   name        String
   description String?
   steps       String[]
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String   @db.ObjectId
+  persona     Persona  @relation(fields: [personaId], references: [id])
+  personaId   String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
+
 
 enum StoryType {
   EPIC
