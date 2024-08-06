@@ -1,7 +1,7 @@
 // app/routes/projects.$projectId.tsx
 import { json, redirect } from "@remix-run/node";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useActionData, useFetcher, Form } from "@remix-run/react";
+import { useLoaderData, useActionData, useFetcher, Form, Link } from "@remix-run/react";
 import { useState, useEffect } from 'react';
 import { BoardView } from "~/components/BoardView";
 import { BoardView as BoardViewV2 } from "~/components/BoardView.v2";
@@ -13,6 +13,7 @@ import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
 import type { DropResult } from 'react-beautiful-dnd';
 import { requireUserId } from "~/utils/auth.server";
+
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -240,6 +241,12 @@ export default function ProjectDetail() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">{project?.name}</h1>
+        <Link
+        to="journeys"
+        className="inline-block mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+      >
+        Generate User Journey
+      </Link>
         <Form method="post">
           <input type="hidden" name="_action" value="deleteProject" />
           <button
