@@ -13,7 +13,7 @@ import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
 import type { DropResult } from 'react-beautiful-dnd';
 import { getUserId, requireUserId } from "~/utils/auth.server";
-
+import { generateStoryIdeas, refineUserStory } from "~/utils/openai.server";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -45,6 +45,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const userId = await getUserId(request);
+  const { projectId } = params;
+
+  if (!projectId) {
+    throw new Response("Not Found", { status: 404 });
+  }
   const formData = await request.formData();
   const _action = formData.get("_action");
 
@@ -65,6 +70,22 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       });
 
       return json({ success: true, action: "updateProject" });
+    }
+    case "generateIdeas": {
+      const prompt = formData.get("prompt");
+      if (typeof prompt !== "string") {
+        return json({ error: "Invalid prompt" }, { status: 400 });
+      }
+      const suggestion = await generateStoryIdeas(prompt);
+      return json({ _action, suggestion });
+    }
+    case "refineStory": {
+      const story = formData.get("story");
+      if (typeof story !== "string") {
+        return json({ error: "Invalid story" }, { status: 400 });
+      }
+      const suggestion = await refineUserStory(story);
+      return json({ _action, suggestion });
     }
     case "createStory": {
       // Handle story creation (existing code)
