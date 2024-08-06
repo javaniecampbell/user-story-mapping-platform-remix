@@ -16,7 +16,7 @@ import { getUserId, requireUserId } from "~/utils/auth.server";
 import { generateStoryIdeas, refineUserStory } from "~/utils/openai.server";
 import { PersonaManager } from "~/components/PersonaManager";
 import { JourneyGenerator } from "~/components/JourneyGenerator";
-
+import type { DropResult } from 'react-beautiful-dnd';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
@@ -329,7 +329,51 @@ export default function ProjectDetail() {
     formaData.append("_action", "createStory");
     fetcher.submit(formaData, { method: "post" })
   };
+  const handlePersonaManagerToStoryDragEnd = (result: DropResult, options?: { personaId: string, destinationId: string }) => {
+    if (!result.destination) return;
+    const { personaId, destinationId } = options ?? {};
+    if (!personaId || !destinationId) {
+      return;
+    }
+    const storyId = destinationId.replace("story-", "");
 
+    fetcher.submit(
+      { _action: "mapPersonaToStory", storyId, personaId },
+      { method: "post" }
+    );
+
+    // Optimistically update the UI
+    setStories(prevStories =>
+      prevStories?.map(story =>
+        story.id === storyId
+          ? { ...story, personas: [...story.personas, personas.find(p => p.id === personaId)!] }
+          : story
+      )
+    );
+  };
+  const handleStoryToPersonaManagerDragEnd = (result: DropResult, options?: { personaId: string, sourceId: string, destinationId: string }) => {
+    if (!result.destination) return;
+    const { personaId, sourceId, destinationId } = options ?? {};
+    if (!personaId || !sourceId || !destinationId) {
+      return;
+    }
+
+    const sourceStoryId = sourceId.replace("story-", "");
+
+    fetcher.submit(
+      { _action: "removePersonaFromStory", storyId: sourceStoryId, personaId },
+      { method: "post" }
+    );
+
+    // Optimistically update the UI
+    setStories(prevStories =>
+      prevStories.map(story =>
+        story.id === sourceStoryId
+          ? { ...story, personas: story.personas.filter(p => p.id !== personaId) }
+          : story
+      )
+    );
+  };
   const handleStoryDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
@@ -350,11 +394,14 @@ export default function ProjectDetail() {
       { method: "post" }
     );
   };
-  const handlePersonaDragEnd = (result: DropResult) => {
+  const handlePersonaDragEnd = (result: DropResult, options?: { sourceStoryId: string, destinationStoryId: string, personaId: string }) => {
     if (!result.destination) return;
-    const sourceStoryId = result.source.droppableId.replace("story-", "");
-    const destinationStoryId = result.destination.droppableId.replace("story-", "");
-    const personaId = result.draggableId;
+
+    const { sourceStoryId, destinationStoryId, personaId } = options ?? {};
+
+    if (!sourceStoryId || !destinationStoryId || !personaId) {
+      return;
+    }
 
     if (sourceStoryId === destinationStoryId) {
       // Reordering within the same story, no backend update needed
@@ -407,13 +454,32 @@ export default function ProjectDetail() {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     if (result.type === "PERSONA") {
-      handlePersonaDragEnd(result);
+      const personaId = result.draggableId;
+      const sourceId = result.source.droppableId;
+      const destinationId = result.destination.droppableId;
+
+      const sourceStoryId = sourceId.replace("story-", "");
+      if (sourceId === "persona-manager") {
+        // Dragging from PersonaManager to a story
+        handlePersonaManagerToStoryDragEnd(result, { personaId, destinationId });
+
+      } else if (destinationId === "persona-manager") {
+        // Dragging from a story back to PersonaManager
+        handleStoryToPersonaManagerDragEnd(result, { personaId, sourceId, destinationId });
+
+      } else {
+        // Moving between stories
+        const sourceStoryId = sourceId.replace("story-", "");
+        const destinationStoryId = destinationId.replace("story-", "");
+        handlePersonaDragEnd(result, { sourceStoryId, destinationStoryId, personaId });
+      }
     } else {
+      // Handle story type changes 
       handleStoryDragEnd(result);
     }
   };
   return (
-    <div>
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">{project?.name}</h1>
         <Link
@@ -438,7 +504,7 @@ export default function ProjectDetail() {
         </Form>
       </div>
 
-      <div className="mt-8">
+      <div>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
             <BoardViewV2
@@ -454,7 +520,7 @@ export default function ProjectDetail() {
         </div>
       </div>
 
-      <div className="mt-8">
+      <div>
         {editingStoryId ? (
           <>
             <h2 className="text-xl font-bold mb-4">Edit Story</h2>
@@ -489,7 +555,7 @@ export default function ProjectDetail() {
       <div>
         <JourneyGenerator projectId={project?.id} stories={stories} personas={personas} />
       </div>
-      <div className="mt-8">
+      <div>
         <h2 className="text-xl font-bold mb-4">Edit Project</h2>
         <ProjectEditForm project={{
           id: project?.id ?? "",
