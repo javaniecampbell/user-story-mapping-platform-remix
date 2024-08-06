@@ -1,9 +1,12 @@
 // app/components/ProjectForm.tsx
 import { Form } from "@remix-run/react";
+type ProjectFormProps = {
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
+};
 
-export function ProjectForm() {
+export function ProjectForm({ onSubmit }: ProjectFormProps) {
   return (
-    <Form method="post" className="space-y-4">
+    <Form method="post" onSubmit={onSubmit} className="space-y-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700">
           Project Name
