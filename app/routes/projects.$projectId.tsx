@@ -352,37 +352,48 @@ export default function ProjectDetail() {
   };
   const handlePersonaDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    const storyId = result.destination.droppableId.replace("story-", "");
+    const sourceStoryId = result.source.droppableId.replace("story-", "");
+    const destinationStoryId = result.destination.droppableId.replace("story-", "");
     const personaId = result.draggableId;
 
-    if (result.source.droppableId === result.destination.droppableId) {
+    if (sourceStoryId === destinationStoryId) {
       // Reordering within the same story, no backend update needed
       return;
     }
 
-    if (result.source.droppableId.startsWith("story-")) {
-      // Moving from one story to another
-      fetcher.submit(
-        { _action: "removePersonaFromStory", storyId: result.source.droppableId.replace("story-", ""), personaId },
-        { method: "post" }
-      );
-    }
+    // if (result.source.droppableId.startsWith("story-")) {
+    //   // Moving from one story to another
+    //   fetcher.submit(
+    //     { _action: "removePersonaFromStory", storyId: result.source.droppableId.replace("story-", ""), personaId },
+    //     { method: "post" }
+    //   );
+    // }
+
+    // fetcher.submit(
+    //   { _action: "mapPersonaToStory", storyId, personaId },
+    //   { method: "post" }
+    // );
 
     fetcher.submit(
-      { _action: "mapPersonaToStory", storyId, personaId },
+      { _action: "removePersonaFromStory", storyId: sourceStoryId, personaId },
+      { method: "post" }
+    );
+
+    fetcher.submit(
+      { _action: "mapPersonaToStory", storyId: destinationStoryId, personaId },
       { method: "post" }
     );
 
     // Optimistically update the UI
     setStories(prevStories =>
-      prevStories.map(story => {
-        if (story.id === storyId) {
+      prevStories?.map(story => {
+        if (story.id === destinationStoryId) {
           return {
             ...story,
             personas: [...story.personas, personas.find(p => p.id === personaId)!]
           };
         }
-        if (story.id === result.source.droppableId.replace("story-", "")) {
+        if (story.id === sourceStoryId) {
           return {
             ...story,
             personas: story.personas.filter(p => p.id !== personaId)
