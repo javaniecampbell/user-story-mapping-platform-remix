@@ -36,8 +36,11 @@ export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   if (!project) {
     throw new Response("Not Found", { status: 404 });
   }
-
-  return json({ project });
+  let personas = await db.persona.findMany({
+    // where: { userId },
+    select: { id: true, name: true },
+  });
+  return json({ project, personas });
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -92,7 +95,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function JourneyGeneration() {
-  const { project } = useLoaderData<typeof loader>();
+  const { project, personas } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [selectedPersona, setSelectedPersona] = useState<string>("");
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
@@ -154,7 +157,7 @@ export default function JourneyGeneration() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           >
             <option value="">Select a persona</option>
-            {project.personas.map(persona => (
+            {personas.map(persona => (
               <option key={persona.id} value={persona.id}>{persona.name}</option>
             ))}
           </select>
