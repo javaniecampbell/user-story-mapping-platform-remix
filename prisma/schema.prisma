@@ -18,23 +18,23 @@ model User {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   email     String    @unique
   password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
   projects  Project[]
   // Suggested code may be subject to a license. Learn more: ~LicenseLog:2404538378.
   personas  Persona[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Project {
   id          String      @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
   userStories UserStory[]
   user        User        @relation(fields: [userId], references: [id])
   userId      String      @db.ObjectId
   Journey     Journey[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model UserStory {
@@ -47,6 +47,8 @@ model UserStory {
   personas    Persona[]     @relation(fields: [personaIds], references: [id])
   personaIds  String[]      @db.ObjectId
   JourneyStep JourneyStep[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model Persona {
@@ -58,6 +60,8 @@ model Persona {
   stories      UserStory[] @relation(fields: [userStoryIds], references: [id])
   userStoryIds String[]    @db.ObjectId
   Journey      Journey[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
   
 }
 
@@ -70,9 +74,9 @@ model Journey {
   projectId   String        @db.ObjectId
   persona     Persona       @relation(fields: [personaId], references: [id])
   personaId   String        @db.ObjectId
+  JourneyStep JourneyStep[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-  JourneyStep JourneyStep[]
 }
 
 model JourneyStep {
