@@ -45,6 +45,8 @@ model Project {
   journeys    Journey[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  personas    Persona[]   @relation(fields: [personaIds], references: [id])
+  personaIds  String[]    @db.ObjectId
 }
 
 model UserStory {
@@ -72,6 +74,8 @@ model Persona {
   journeys     Journey[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  projects     Project[]   @relation(fields: [projectIds], references: [id])
+  projectIds   String[]    @db.ObjectId
 }
 
 model Journey {

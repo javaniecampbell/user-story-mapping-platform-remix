@@ -8,9 +8,10 @@ import { requireUserId } from "~/utils/auth.server";
 
 
 
-export const loader = async ({ request}: LoaderFunctionArgs) => {
-  // const userId = await requireUserId(request);
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const userId = await requireUserId(request);
   const projects = await db.project.findMany({
+    where: { userId },
     select: { id: true, name: true },
     orderBy: { createdAt: 'desc' },
   });
@@ -20,7 +21,7 @@ export const loader = async ({ request}: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const _action = formData.get("_action");
-
+  const userId = await requireUserId(request)
 
   if (_action === "deleteProject") {
     const projectId = formData.get("projectId");
@@ -28,7 +29,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return json({ error: "Invalid project ID" }, { status: 400 });
     }
     await db.project.delete({
-      where: { id: projectId },
+      where: { id: projectId, userId: userId },
     });
     return json({ success: true });
   } else if (_action === "createProject") {
@@ -45,12 +46,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       data: {
         name,
         description: typeof description === "string" ? description : undefined,
+        user: {
+          connect: {
+            id: userId,
+          },
+        },
       },
     });
 
     return redirect(`/projects/${project.id}`);
   }
-  return json({ error: "Invalid action" }, { status: 400 });
+  return json({ errors: { _messages: "Invalid action" }}, { status: 400 });
 };
 
 export default function Projects() {
@@ -65,7 +71,7 @@ export default function Projects() {
           Create New Project
         </Link>
       </div>
-      
+
       <div className="mt-8">
         <ul className="space-y-4">
           {projects.map((project) => (
@@ -92,7 +98,7 @@ export default function Projects() {
           ))}
         </ul>
       </div>
-     
+
       <ProjectForm />
       {actionData?.errors && (
         <div className="text-red-500 mt-2">
