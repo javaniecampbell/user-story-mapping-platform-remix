@@ -15,6 +15,7 @@ import type { DropResult } from 'react-beautiful-dnd';
 import { getUserId, requireUserId } from "~/utils/auth.server";
 import { generateStoryIdeas, refineUserStory } from "~/utils/openai.server";
 import { PersonaManager } from "~/components/PersonaManager";
+import { JourneyGenerator } from "~/components/JourneyGenerator";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -217,6 +218,26 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       return json({ success: true });
     }
 
+    case "removePersonaFromStory": {
+      const personaId = formData.get("personaId");
+      const storyId = formData.get("storyId");
+
+      if (typeof personaId !== "string" || typeof storyId !== "string") {
+        return handleErrors({ mapping: "Invalid mapping data" });
+      }
+
+      await db.userStory.update({
+        where: { id: storyId },
+        data: {
+          personas: {
+            disconnect: { id: personaId }
+          }
+        }
+      });
+
+      return json({ success: true });
+    }
+
     case "deleteProject": {
       await db.project.delete({
         where: { id: params.projectId, userId: userId! },
@@ -241,10 +262,11 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export default function ProjectDetail() {
-  const { project } = useLoaderData<typeof loader>();
+  const { project, personas: initialPersonas } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const fetcher = useFetcher();
   const [stories, setStories] = useState(project?.userStories);
+  const [personas, setPersonas] = useState([...project?.personas, ...initialPersonas]);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -271,8 +293,26 @@ export default function ProjectDetail() {
 
   useEffect(() => {
     setStories(project?.userStories);
+    console.log("LOADED USER STORIES", project?.userStories)
+
   }, [project?.userStories]);
 
+  useEffect(() => {
+    if (fetcher.data?.success) {
+      if (fetcher.data?.story) {
+        setStories(prevStories => [...prevStories, fetcher.data?.story]);
+        console.log("FETCHED STORY", fetcher.data?.story)
+      }
+      if (fetcher.data?.persona) {
+        setPersonas(prevPersonas => [...prevPersonas, fetcher.data?.persona]);
+        console.log("FETCHED PERSONA", fetcher.data?.persona)
+      }
+      if (fetcher.data?.deletedPersonaId) {
+        setPersonas(prevPersonas => prevPersonas?.filter(p => p.id !== fetcher.data?.deletedPersonaId));
+        console.log("DELETED PERSONA", fetcher.data?.deletedPersonaId)
+      }
+    }
+  }, [fetcher.data]);
 
   const handleDeleteStory = (storyId: string) => {
     if (confirm("Are you sure you want to delete this story?")) {
@@ -283,14 +323,14 @@ export default function ProjectDetail() {
     }
   };
 
-  const handleStoryCreation = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateStory = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formaData = new FormData(e.currentTarget);
     formaData.append("_action", "createStory");
     fetcher.submit(formaData, { method: "post" })
   };
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleStoryDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const storyId = result.draggableId;
@@ -310,19 +350,57 @@ export default function ProjectDetail() {
       { method: "post" }
     );
   };
-
   const handlePersonaDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-
+    const storyId = result.destination.droppableId.replace("story-", "");
     const personaId = result.draggableId;
-    const storyId = result.destination.droppableId;
+
+    if (result.source.droppableId === result.destination.droppableId) {
+      // Reordering within the same story, no backend update needed
+      return;
+    }
+
+    if (result.source.droppableId.startsWith("story-")) {
+      // Moving from one story to another
+      fetcher.submit(
+        { _action: "removePersonaFromStory", storyId: result.source.droppableId.replace("story-", ""), personaId },
+        { method: "post" }
+      );
+    }
 
     fetcher.submit(
-      { personaId, storyId, _action: "mapPersonaToStory" },
+      { _action: "mapPersonaToStory", storyId, personaId },
       { method: "post" }
+    );
+
+    // Optimistically update the UI
+    setStories(prevStories =>
+      prevStories.map(story => {
+        if (story.id === storyId) {
+          return {
+            ...story,
+            personas: [...story.personas, personas.find(p => p.id === personaId)!]
+          };
+        }
+        if (story.id === result.source.droppableId.replace("story-", "")) {
+          return {
+            ...story,
+            personas: story.personas.filter(p => p.id !== personaId)
+          };
+        }
+        return story;
+      })
     );
   };
 
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    if (result.type === "PERSONA") {
+      handlePersonaDragEnd(result);
+    } else {
+      handleStoryDragEnd(result);
+    }
+  };
   return (
     <div>
       <div className="flex justify-between items-center">
@@ -348,7 +426,6 @@ export default function ProjectDetail() {
           </button>
         </Form>
       </div>
-
 
       <div className="mt-8">
         <div className="grid grid-cols-3 gap-4">
@@ -389,7 +466,7 @@ export default function ProjectDetail() {
         ) : (
           <>
             <h2 className="text-xl font-bold mb-4">Add New Story</h2>
-            <StoryForm onSubmit={handleStoryCreation} />
+            <StoryForm onSubmit={handleCreateStory} />
           </>
         )}
         {actionData?.errors && (
@@ -398,7 +475,9 @@ export default function ProjectDetail() {
           </div>
         )}
       </div>
-
+      <div>
+        <JourneyGenerator projectId={project?.id} stories={stories} personas={personas} />
+      </div>
       <div className="mt-8">
         <h2 className="text-xl font-bold mb-4">Edit Project</h2>
         <ProjectEditForm project={{
