@@ -16,7 +16,7 @@ export function Header({ user }: HeaderProps) {
           <li><Link to="/dashboard">Dashboard</Link></li>
           <li><Link to="/projects">Projects</Link></li>
           <li><Link to="/about">About</Link></li>
-          {user ? (
+          {user && user?.email ? (
             <>
               <li>Welcome, {user?.email}</li>
               <li>
