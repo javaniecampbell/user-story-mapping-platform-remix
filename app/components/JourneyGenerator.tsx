@@ -94,10 +94,10 @@ export function JourneyGenerator({ projectId, stories, personas }: JourneyGenera
       {fetcher.data?.journey && (
         <div className="mt-4 p-4 bg-gray-100 rounded-md">
           <h3 className="font-semibold">Generated Journey:</h3>
-          <p>{fetcher.data.journey.name}</p>
+          <p>{fetcher.data?.journey?.name}</p>
           <ul className="list-disc pl-5 mt-2">
-            {fetcher.data.journey.steps.map((step: any, index: number) => (
-              <li key={index}>{step.description}</li>
+            {fetcher.data?.journey?.steps?.map((step: any, index: number) => (
+              <li key={index}>{step?.description}</li>
             ))}
           </ul>
         </div>
