@@ -74,7 +74,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           create: storyIds.map((storyId, index) => ({
             order: index,
             description: `Step ${index + 1}`,
-            userStoryId: storyId,
+            userStoryId: String(storyId),
           })),
         },
       },
@@ -105,7 +105,7 @@ export default function JourneyGeneration() {
   };
 
   const handleStoryToggle = (storyId: string) => {
-    setSelectedStories(prev => 
+    setSelectedStories(prev =>
       prev.includes(storyId)
         ? prev.filter(id => id !== storyId)
         : [...prev, storyId]
@@ -123,7 +123,7 @@ export default function JourneyGeneration() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Generate User Journey</h1>
-      
+
       <Form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Journey Name</label>
@@ -135,7 +135,7 @@ export default function JourneyGeneration() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
-        
+
         <div>
           <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
           <textarea
@@ -145,7 +145,7 @@ export default function JourneyGeneration() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           ></textarea>
         </div>
-        
+
         <div>
           <label htmlFor="personaId" className="block text-sm font-medium text-gray-700">Select Persona</label>
           <select
@@ -162,7 +162,7 @@ export default function JourneyGeneration() {
             ))}
           </select>
         </div>
-        
+
         <div>
           <span className="block text-sm font-medium text-gray-700">Select User Stories</span>
           <div className="mt-1 space-y-2">
@@ -182,7 +182,7 @@ export default function JourneyGeneration() {
             ))}
           </div>
         </div>
-        
+
         <button
           type="submit"
           className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
