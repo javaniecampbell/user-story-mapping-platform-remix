@@ -11,12 +11,12 @@ import { StoryEditForm } from "~/components/StoryEditForm";
 import { db } from "~/utils/db.server";
 import { validateRequired, validateType } from "~/utils/validation.server";
 import { handleErrors, throwNotFoundError } from "~/utils/error-handling.server";
-import type { DropResult } from 'react-beautiful-dnd';
 import { getUserId, requireUserId } from "~/utils/auth.server";
 import { generateStoryIdeas, refineUserStory } from "~/utils/openai.server";
 import { PersonaManager } from "~/components/PersonaManager";
 import { JourneyGenerator } from "~/components/JourneyGenerator";
 import type { DropResult } from 'react-beautiful-dnd';
+import { DragAndDropProvider } from "~/components/DragAndDropProvider";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const userId = await requireUserId(request);
@@ -478,6 +478,8 @@ export default function ProjectDetail() {
       handleStoryDragEnd(result);
     }
   };
+
+  console.log("PROJECT DETAILS", project)
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -504,21 +506,20 @@ export default function ProjectDetail() {
         </Form>
       </div>
 
-      <div>
+      <DragAndDropProvider onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
             <BoardViewV2
               stories={stories ?? []}
-              onDragEnd={handleDragEnd}
               onEditStory={(storyId) => setEditingStoryId(storyId)}
               onDeleteStory={handleDeleteStory}
             />
           </div>
           <div>
-            <PersonaManager projectId={project.id} personas={project.personas} />
+            <PersonaManager projectId={project.id} personas={personas} />
           </div>
         </div>
-      </div>
+      </DragAndDropProvider>
 
       <div>
         {editingStoryId ? (

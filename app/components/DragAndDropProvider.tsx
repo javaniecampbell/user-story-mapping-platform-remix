@@ -6,9 +6,9 @@ interface DragAndDropProviderProps {
 }
 
 
-export function DragAndDropProvider({ children }: DragAndDropProviderProps) {
+export function DragAndDropProvider({ children , onDragEnd }: DragAndDropProviderProps) {
     return (
-        <DragDropContext onDragEnd={(result) => console.log(result)}>
+        <DragDropContext onDragEnd={onDragEnd}>
             {children}
         </DragDropContext>
     );
