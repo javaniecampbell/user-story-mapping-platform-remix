@@ -12,6 +12,7 @@ interface JourneyGeneratorProps {
 export function JourneyGenerator({ projectId, stories, personas }: JourneyGeneratorProps) {
   const [selectedPersona, setSelectedPersona] = useState<string>('');
   const [selectedStories, setSelectedStories] = useState<string[]>([]);
+  const [generatedJourney, setGeneratedJourney] = useState<string>('');
   const fetcher = useFetcher();
 
   const handlePersonaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -19,7 +20,7 @@ export function JourneyGenerator({ projectId, stories, personas }: JourneyGenera
   };
 
   const handleStoryToggle = (storyId: string) => {
-    setSelectedStories(prev => 
+    setSelectedStories(prev =>
       prev.includes(storyId)
         ? prev.filter(id => id !== storyId)
         : [...prev, storyId]
@@ -33,8 +34,24 @@ export function JourneyGenerator({ projectId, stories, personas }: JourneyGenera
     formData.append('projectId', projectId);
     formData.append('personaId', selectedPersona);
     selectedStories.forEach(storyId => formData.append('storyIds', storyId));
-    
-    fetcher.submit(formData, { method: 'post' });
+
+    fetcher.submit(formData, { method: 'post', action: "/api/llm-suggestions" });
+  };
+
+  const handleGenerateNarrative = () => {
+    const persona = personas.find(p => p.id === selectedPersona);
+    const selectedStoryTitles = stories
+      .filter(story => selectedStories.includes(story.id))
+      .map(story => story.title)
+      .join(", ");
+
+    fetcher.submit(
+      {
+        _action: "generateJourneyNarrative",
+        prompt: `Generate a narrative description for a user journey. Persona: ${persona?.name}. User stories: ${selectedStoryTitles}`
+      },
+      { method: "post", action: "/api/llm-suggestions" }
+    );
   };
 
   return (
@@ -100,6 +117,18 @@ export function JourneyGenerator({ projectId, stories, personas }: JourneyGenera
               <li key={index}>{step?.description}</li>
             ))}
           </ul>
+          <button
+            onClick={handleGenerateNarrative}
+            className="mt-2 inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Generate Narrative Description
+          </button>
+        </div>
+      )}
+      {fetcher.data?.suggestion && (
+        <div className="mt-4 p-4 bg-gray-100 rounded-md">
+          <h3 className="font-semibold">Narrative Description:</h3>
+          <p>{fetcher.data.suggestion}</p>
         </div>
       )}
     </div>
