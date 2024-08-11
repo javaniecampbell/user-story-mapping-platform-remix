@@ -35,7 +35,7 @@ export function JourneyGenerator({ projectId, stories, personas }: JourneyGenera
     formData.append('personaId', selectedPersona);
     selectedStories.forEach(storyId => formData.append('storyIds', storyId));
 
-    fetcher.submit(formData, { method: 'post', action: "/api/llm-suggestions" });
+    fetcher.submit(formData, { method: 'post', action: `/projects/${projectId}/journeys` });
   };
 
   const handleGenerateNarrative = () => {
