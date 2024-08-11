@@ -91,6 +91,7 @@ model Journey {
   updatedAt   DateTime      @updatedAt
 }
 
+// Might need a step name, the step description should be populated by human or generated
 model JourneyStep {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   order       Int
